@@ -6,15 +6,14 @@ export function activate(context: vscode.ExtensionContext) {
     let disposable = vscode.commands.registerCommand(commandId, () => {
         let folder;
         if (vscode.window.activeTextEditor?.document.uri) {
-            folder = vscode.workspace.getWorkspaceFolder(vscode.window.activeTextEditor?.document.uri)?.uri.fsPath;
+            folder = vscode.workspace.getWorkspaceFolder(vscode.window.activeTextEditor?.document.uri)?.uri;
         } else if (vscode.workspace.workspaceFolders?.[0]) {
-            folder = vscode.workspace.workspaceFolders?.[0].uri.fsPath
+            folder = vscode.workspace.workspaceFolders?.[0].uri
         }
         if (!folder) return;
 
         const req = typeof __webpack_require__ === 'function' ? __non_webpack_require__ : require;
-        if (!vscode.workspace.workspaceFolders?.[0]) return '';
-        const {name, repository} = folder ? req(folder + '/package.json') : {name: '', repository: {}};
+        const {name, repository} = folder ? req(folder.fsPath + '/package.json') : {name: '', repository: {}};
         const type =
             repository?.url?.startsWith('git@github.com:softwaregroup-bg/ut-')
                 ? 'github'
@@ -24,7 +23,7 @@ export function activate(context: vscode.ExtensionContext) {
                     : '';
 
         const extension = vscode.extensions.getExtension('vscode.git') as vscode.Extension<GitExtension>;
-        let branch = extension.exports.getAPI(1).getRepository(vscode.workspace.workspaceFolders?.[0]?.uri)?.state.HEAD?.name || '';
+        let branch = extension.exports.getAPI(1).getRepository(folder)?.state.HEAD?.name || '';
 
 
         const panel = vscode.window.createWebviewPanel(
