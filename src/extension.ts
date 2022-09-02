@@ -4,11 +4,16 @@ import { GitExtension } from './@types/vscode.git';
 export function activate(context: vscode.ExtensionContext) {
     const commandId = 'ut-code-dashboard.open';
     let disposable = vscode.commands.registerCommand(commandId, () => {
-        if (!vscode.workspace.workspaceFolders?.[0]) return;
+        let folder;
+        if (vscode.window.activeTextEditor?.document.uri) {
+            folder = vscode.workspace.getWorkspaceFolder(vscode.window.activeTextEditor?.document.uri)?.uri.fsPath;
+        } else if (vscode.workspace.workspaceFolders?.[0]) {
+            folder = vscode.workspace.workspaceFolders?.[0].uri.fsPath
+        }
+        if (!folder) return;
 
         const req = typeof __webpack_require__ === 'function' ? __non_webpack_require__ : require;
         if (!vscode.workspace.workspaceFolders?.[0]) return '';
-        const folder = vscode.workspace.workspaceFolders?.[0]?.uri?.fsPath;
         const {name, repository} = folder ? req(folder + '/package.json') : {name: '', repository: {}};
         const type =
             repository?.url?.startsWith('git@github.com:softwaregroup-bg/ut-')
@@ -62,6 +67,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(myStatusBarItem);
     context.subscriptions.push(disposable);
     myStatusBarItem.text = 'UT';
+    myStatusBarItem.name = 'UT Module Dashboard'
     myStatusBarItem.show();
 }
 

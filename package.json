@@ -2,7 +2,7 @@
 	"name": "ut-code-dashboard",
 	"displayName": "ut-code-dashboard",
 	"description": "UnderTree project summary",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"engines": {
 		"vscode": "^1.63.0"
 	},
@@ -16,18 +16,17 @@
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
-		"commands": [
-			{
-				"command": "ut-code-dashboard.open",
+		"commands": [{
+			"command": "ut-code-dashboard.open",
 				"title": "Open UT Module Dashboard"
-			}
-		],
-		"keybindings": [
-			{
-				"command": "ut-code-dashboard.open",
-				"key": "ctrl+u ctrl+t"
-			}
-		]
+		}],
+		"keybindings": [{
+			"command": "ut-code-dashboard.open",
+			"key": "alt+u alt+t"
+		}, {
+			"command": "ut-code-dashboard.open",
+			"key": "ctrl+f1"
+		}]
 	},
 	"scripts": {
 		"vscode:prepublish": "yarn run package",
