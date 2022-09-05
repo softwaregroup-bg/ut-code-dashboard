@@ -40,7 +40,7 @@
 		"test": "node ./out/test/runTest.js"
 	},
 	"repository": {
-		"url": "git@github.com:softwaregroup-bg/ut-code-dashboard.git"
+		"url": "https://github.com/softwaregroup-bg/ut-code-dashboard"
 	},
 	"devDependencies": {
 		"@types/vscode": "^1.63.0",
