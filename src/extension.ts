@@ -104,7 +104,7 @@ function getWebviewContent({name, type, branch}: {name: string, type: string, br
     </style>
 </head>
 <body>
-    <iframe width="100%" height="100%" frameborder="0" src="https://redirect.k8s.softwaregroup.com/rpc/tools/module/${name}/${branch}"/>
+    <iframe width="100%" height="100%" frameborder="0" src="https://redirect.k8s.softwaregroup.com/rpc/tools/module/${type}/${name}/${branch}"/>
 </body>
 </html>`;
 }
