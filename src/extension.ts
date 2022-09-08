@@ -1,70 +1,94 @@
 import * as vscode from 'vscode';
 import { GitExtension } from './@types/vscode.git';
 
+function openDashboard(folder: vscode.Uri, context: vscode.ExtensionContext) {
+    const req = typeof __webpack_require__ === 'function' ? __non_webpack_require__ : require;
+    const {name, repository} = folder ? req(folder.fsPath + '/package.json') : {name: '', repository: {}};
+    const type =
+        repository?.url?.startsWith('git@github.com:softwaregroup-bg/ut-')
+            ? 'github'
+            : (repository?.url?.startsWith('git@git.softwaregroup.com:ut5impl/impl-')
+                | repository?.url?.startsWith('git@git.softwaregroup.com:ut5/ut-'))
+                ? 'gitlab'
+                : '';
+
+    const extension = vscode.extensions.getExtension('vscode.git') as vscode.Extension<GitExtension>;
+    let branch = extension.exports.getAPI(1).getRepository(folder)?.state.HEAD?.name || '';
+
+
+    const panel = vscode.window.createWebviewPanel(
+        'ut',
+        'UT Module Dashboard',
+        vscode.ViewColumn.One,
+        {
+            enableScripts: true
+        }
+    );
+
+    panel.webview.onDidReceiveMessage(
+        message => {
+            switch (message.command) {
+                case 'show':
+                    vscode.env.openExternal(vscode.Uri.parse(message.text));
+                return;
+            }
+        },
+        undefined,
+        context.subscriptions
+    );
+
+    panel.webview.html = type ? getWebviewContent({name, type, branch}) : `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>UT Module Dashboard</title>
+        </head>
+        <body>
+            <h1 style="color: red">UNSUPPORTED REPOSITORY URL ${repository?.url}</h1>
+        </body>
+        </html>	`;
+}
+
 export function activate(context: vscode.ExtensionContext) {
-    const commandId = 'ut-code-dashboard.open';
-    let disposable = vscode.commands.registerCommand(commandId, () => {
+    const openCurrentCommand = 'ut-code-dashboard.open';
+    const openCurrentHandler = () => {
         let folder;
         if (vscode.window.activeTextEditor?.document.uri) {
             folder = vscode.workspace.getWorkspaceFolder(vscode.window.activeTextEditor?.document.uri)?.uri;
+        } else if (vscode.workspace?.workspaceFolders?.length) {
+            openSelectHandler();
+            return;
         } else if (vscode.workspace.workspaceFolders?.[0]) {
             folder = vscode.workspace.workspaceFolders?.[0].uri
         }
         if (!folder) return;
+        openDashboard(folder, context);
+    }
 
-        const req = typeof __webpack_require__ === 'function' ? __non_webpack_require__ : require;
-        const {name, repository} = folder ? req(folder.fsPath + '/package.json') : {name: '', repository: {}};
-        const type =
-            repository?.url?.startsWith('git@github.com:softwaregroup-bg/ut-')
-                ? 'github'
-                : (repository?.url?.startsWith('git@git.softwaregroup.com:ut5impl/impl-')
-                    | repository?.url?.startsWith('git@git.softwaregroup.com:ut5/ut-'))
-                    ? 'gitlab'
-                    : '';
+    const openSelectHandler = () => {
+        if (vscode.workspace?.workspaceFolders?.length === 1) return openCurrentHandler();
+        if (vscode.workspace?.workspaceFolders?.length) {
+            vscode.window.showQuickPick(
+                vscode.workspace?.workspaceFolders.map(({name}) => name),
+                {canPickMany: false, title: 'Select module'}
+            ).then(selected => {
+                const found = vscode.workspace?.workspaceFolders?.find(item => item.name === selected);
+                if (found) openDashboard(found.uri, context)
+            });
+        }
+    }
 
-        const extension = vscode.extensions.getExtension('vscode.git') as vscode.Extension<GitExtension>;
-        let branch = extension.exports.getAPI(1).getRepository(folder)?.state.HEAD?.name || '';
-
-
-        const panel = vscode.window.createWebviewPanel(
-            'ut',
-            'UT Module Dashboard',
-            vscode.ViewColumn.One,
-            {
-                enableScripts: true
-            }
-        );
-
-        panel.webview.onDidReceiveMessage(
-            message => {
-                switch (message.command) {
-                    case 'show':
-                        vscode.env.openExternal(vscode.Uri.parse(message.text));
-                    return;
-                }
-            },
-            undefined,
-            context.subscriptions
-        );
-
-        panel.webview.html = type ? getWebviewContent({name, type, branch}) : `
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>UT Module Dashboard</title>
-            </head>
-            <body>
-                <h1 style="color: red">UNSUPPORTED REPOSITORY URL ${repository?.url}</h1>
-            </body>
-            </html>	`;
-    });
+    const openCurrent = vscode.commands.registerCommand(openCurrentCommand, openCurrentHandler);
+    const openSelectCommand = 'ut-code-dashboard.select';
+    const openSelect = vscode.commands.registerCommand(openSelectCommand, openSelectHandler);
 
     const myStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    myStatusBarItem.command = commandId;
+    myStatusBarItem.command = openSelectCommand;
     context.subscriptions.push(myStatusBarItem);
-    context.subscriptions.push(disposable);
+    context.subscriptions.push(openCurrent);
+    context.subscriptions.push(openSelect);
     myStatusBarItem.text = 'UT';
     myStatusBarItem.name = 'UT Module Dashboard'
     myStatusBarItem.show();
